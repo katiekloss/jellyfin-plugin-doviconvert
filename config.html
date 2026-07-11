@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <div id="templateConfigPage" data-role="page" class="page pluginConfigurationPage" data-require="emby-input">
+            <div data-role="content">
+                <div class="content-primary">
+                    <h1>Template Plugin Configuration</h1>
+                    <form id="templateConfigForm">
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="configOption">Config Option</label>
+                            <input id="configOption" is="emby-input" />
+                            <div class="fieldDescription">Whether the option is enabled</div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <script type="text/javascript">
+                let ourPluginId = "";
+    
+                document.getElementById("templateConfigName").addEventListener("pageshow", function () {
+                    Dashboard.showLoadingMsg();
+    
+                    ApiClient.getPluginConfiguration(ourPluginId).then(function (config) {
+                        document.getElementById("configOption").value = config.IncludeAncestorIds;
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+    
+                document.getElementById("templateConfigName").addEventListener("submit", function (e) {
+                    e.preventDefault();
+                    Dashboard.showLoadingMsg();
+    
+                    ApiClient.getPluginConfiguration(ourPluginId).then(function (config) {
+                        config.ConfigOption = document.getElementById("configOption").value;
+
+                        ApiClient.updatePluginConfiguration(ourPluginId, config).then(function (result) {
+                            Dashboard.processPluginConfigurationUpdateResult(result);
+                        })
+                    })
+                });
+            </script>
+        </div>
+    </body>
+</html>
