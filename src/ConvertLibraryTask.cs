@@ -114,9 +114,12 @@ public class ConvertLibraryTask(IPluginManager _pluginManager,
                              token)
             .ConfigureAwait(false);
 
-        await Task.WhenAll(RunToExit(ffmpeg, token),
-                           RunToExit(doviTool, token),
-                           ffmpeg.StandardOutput.BaseStream.CopyToAsync(doviTool.StandardInput.BaseStream, token));
+        // dovitool won't quit until we close its stdin, which CopyTo won't do
+        await Task.WhenAll(
+            RunToExit(ffmpeg, token),
+            RunToExit(doviTool, token),
+            ffmpeg.StandardOutput.BaseStream.CopyToAsync(doviTool.StandardInput.BaseStream, token)
+                                            .ContinueWith(_ => doviTool.StandardInput.Close(), token));
     }
 
     private static async Task WriteStreamToLog(string logPath, Stream logStream, Process logProcess, CancellationToken token)
