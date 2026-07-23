@@ -7,6 +7,8 @@ on:
 jobs:
   build:
     runs-on: dotnet
+    env:
+      MSBUILDTERMINALLOGGER: off
     steps:
       - name: Clone
         run: |
