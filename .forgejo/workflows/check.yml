@@ -1,0 +1,21 @@
+name: Check Build
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: dotnet
+    steps:
+      - name: Clone
+        run: |
+          git clone --quiet -c http.extraHeader="Authorization: token ${{ forgejo.token }}" --revision ${{ forgejo.sha }} ${{ forgejo.server_url }}/${{ forgejo.repository }} .
+      - name: Build
+        run: |
+          dotnet build
+      - name: Upload
+        uses: https://data.forgejo.org/forgejo/upload-artifact@v4
+        with:
+          name: plugin
+          path: bin/Debug/**/*
