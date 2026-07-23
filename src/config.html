@@ -22,7 +22,7 @@
                     Dashboard.showLoadingMsg();
     
                     ApiClient.getPluginConfiguration(ourPluginId).then(function (config) {
-                        document.getElementById("configOption").value = config.IncludeAncestorIds;
+                        document.getElementById("configOption").value = config.ConfigOption;
                         Dashboard.hideLoadingMsg();
                     });
                 });
