@@ -3,9 +3,11 @@ on:
   push:
     paths:
       - src/*
+      - .forgejo/workflows/check.yml
   pull_request:
     paths:
       - src/*
+      - .forgejo/workflows/check.yml
   workflow_dispatch:
 
 jobs:
@@ -24,4 +26,4 @@ jobs:
         uses: https://data.forgejo.org/forgejo/upload-artifact@v4
         with:
           name: plugin
-          path: bin/Debug/**/*
+          path: src/bin/Debug/**/*
