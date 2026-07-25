@@ -56,12 +56,18 @@ public class ConvertLibraryTask(IPluginManager _pluginManager,
 
         foreach (var video in toConvert)
         {
-            await ConvertOne(video, cancellationToken);
+            await ConvertOne(video, configuration, cancellationToken);
         }
     }
 
-    private async Task ConvertOne(Video video, CancellationToken token)
+    private async Task ConvertOne(Video video, PluginConfiguration config, CancellationToken token)
     {
+        if (config.PathToDoviTool is null) throw new Exception("dovi_tool not found");
+        if (config.PathToMkvMerge is null) throw new Exception("mkvmerge not found");
+
+        var correlationId = Guid.NewGuid().ToString()[..8];
+
+        // Extract the raw HEVC stream and convert it to 8.1 in one step
         using var ffmpeg = new Process()
         {
             StartInfo = new ProcessStartInfo(_encoder.EncoderPath)
@@ -83,7 +89,7 @@ public class ConvertLibraryTask(IPluginManager _pluginManager,
         ffmpeg.Start();
 
         _ = WriteStreamToLog(
-                Path.Combine(_paths.LogDirectoryPath, $"ffmpeg_hevc_{video.Id}_{Guid.NewGuid().ToString()[..8]}.log"),
+                Path.Combine(_paths.LogDirectoryPath, $"ffmpeg_hevc_{video.Id}_{correlationId}.log"),
                 ffmpeg.StandardError.BaseStream,
                 ffmpeg,
                 token)
@@ -91,14 +97,14 @@ public class ConvertLibraryTask(IPluginManager _pluginManager,
 
                 using var doviTool = new Process()
         {
-            StartInfo = new ProcessStartInfo("/Users/katie/.cargo/bin/dovi_tool")
+            StartInfo = new ProcessStartInfo(config.PathToDoviTool)
             {
                 Arguments = string.Join(" ", [
                     "-m 2", // convert RPU to 8.1
                     "convert", // modify RPU
                     "--discard", // discard EL
-                    $"-",
-                    $"-o temp.hevc"
+                    "-",
+                    "-o temp.hevc"
                 ]),
                 RedirectStandardInput = true,
                 RedirectStandardError = true
@@ -108,7 +114,7 @@ public class ConvertLibraryTask(IPluginManager _pluginManager,
         _logger.LogInformation("{Command} {Arguments}", doviTool.StartInfo.FileName, doviTool.StartInfo.Arguments);
         doviTool.Start();
 
-        _ = WriteStreamToLog(Path.Combine(_paths.LogDirectoryPath, $"dovi_tool_{video.Id}_{Guid.NewGuid().ToString()[..8]}.log"),
+        _ = WriteStreamToLog(Path.Combine(_paths.LogDirectoryPath, $"dovi_tool_{video.Id}_{correlationId}.log"),
                              doviTool.StandardError.BaseStream,
                              doviTool,
                              token)
@@ -120,6 +126,34 @@ public class ConvertLibraryTask(IPluginManager _pluginManager,
             RunToExit(doviTool, token),
             ffmpeg.StandardOutput.BaseStream.CopyToAsync(doviTool.StandardInput.BaseStream, token)
                                             .ContinueWith(_ => doviTool.StandardInput.Close(), token));
+
+        // Merge the audio/subtitle streams from the original file and the modified HEVC stream to a new MKV
+        using var mkvmerge = new Process()
+        {
+            StartInfo = new ProcessStartInfo(config.PathToMkvMerge)
+            {
+                Arguments = string.Join(" ", [
+                    "-o",
+                    "idk.mkv",
+                    "temp.hevc",
+                    "-D", // select all streams except video from next file
+                    $"\"{video.Path}\""
+                ]),
+                RedirectStandardError = true,
+                RedirectStandardOutput = true
+            }
+        };
+
+        _logger.LogInformation("{Command} {Arguments}", mkvmerge.StartInfo.FileName, mkvmerge.StartInfo.Arguments);
+        mkvmerge.Start();
+        _ = WriteStreamToLog(
+                Path.Combine(_paths.LogDirectoryPath, $"mkvmerge_{video.Id}_{correlationId}.log"),
+                mkvmerge.StandardOutput.BaseStream,
+                mkvmerge,
+                token)
+            .ConfigureAwait(false);
+
+        await RunToExit(mkvmerge, token);
     }
 
     private static async Task WriteStreamToLog(string logPath, Stream logStream, Process logProcess, CancellationToken token)
