@@ -1,38 +1,51 @@
 <!DOCTYPE html>
 <html>
     <body>
-        <div id="templateConfigPage" data-role="page" class="page pluginConfigurationPage" data-require="emby-input">
+        <div id="doviconvertConfigPage" data-role="page" class="page pluginConfigurationPage" data-require="emby-input">
             <div data-role="content">
                 <div class="content-primary">
-                    <h1>Template Plugin Configuration</h1>
-                    <form id="templateConfigForm">
+                    <h1>DoviConvert Config</h1>
+                    <form id="doviconvertConfigForm">
                         <div class="inputContainer">
-                            <label class="inputLabel" for="configOption">Config Option</label>
-                            <input id="configOption" is="emby-input" />
-                            <div class="fieldDescription">Whether the option is enabled</div>
+                            <label class="inputLabel" for="dovitool">Path to dovi_tool</label>
+                            <input id="dovitool" is="emby-input" />
+                            <div class="fieldDescription">Path to the dovi_tool executable</div>
                         </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="mkvmerge">Path to mkvmerge</label>
+                            <input id="mkvmerge" is="emby-input" />
+                            <div class="fieldDescription">Path to the mkvmerge executable</div>
+                        </div>
+                        <div>
+                            <button is="emby-button" type="submit" class="button-submit emby-button">
+                                <span>Save</span>
+                            </button>
+                        </div>
+
                     </form>
                 </div>
             </div>
 
             <script type="text/javascript">
-                let ourPluginId = "";
+                let ourPluginId = "adc5ba9b-de9c-4f24-914c-2992f21e825e";
     
-                document.getElementById("templateConfigName").addEventListener("pageshow", function () {
+                document.getElementById("doviconvertConfigPage").addEventListener("pageshow", function () {
                     Dashboard.showLoadingMsg();
     
                     ApiClient.getPluginConfiguration(ourPluginId).then(function (config) {
-                        document.getElementById("configOption").value = config.ConfigOption;
+                        document.getElementById("dovitool").value = config.PathToDoviTool;
+                        document.getElementById("mkvmerge").value = config.PathToMkvMerge;
                         Dashboard.hideLoadingMsg();
                     });
                 });
     
-                document.getElementById("templateConfigName").addEventListener("submit", function (e) {
+                document.getElementById("doviconvertConfigForm").addEventListener("submit", function (e) {
                     e.preventDefault();
                     Dashboard.showLoadingMsg();
     
                     ApiClient.getPluginConfiguration(ourPluginId).then(function (config) {
-                        config.ConfigOption = document.getElementById("configOption").value;
+                        config.PathToDoviTool = document.getElementById("dovitool").value;
+                        config.PathToMkvMerge = document.getElementById("mkvmerge").value;
 
                         ApiClient.updatePluginConfiguration(ourPluginId, config).then(function (result) {
                             Dashboard.processPluginConfigurationUpdateResult(result);

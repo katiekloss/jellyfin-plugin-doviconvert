@@ -1,7 +1,7 @@
-using System.Text.Json.Serialization;
 using MediaBrowser.Model.Plugins;
 
 public class PluginConfiguration : BasePluginConfiguration
 {
-    public bool ConfigOption { get; set; }
+    public string? PathToDoviTool { get; set; }
+    public string? PathToMkvMerge { get; set; }
 }

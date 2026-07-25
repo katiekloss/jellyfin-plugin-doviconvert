@@ -19,7 +19,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             new()
             {
                 Name = Name,
-                EmbeddedResourcePath = "config.html"
+                EmbeddedResourcePath = "Jellyfin.Plugin.DoviConvert.config.html"
             }
         ];
     }
